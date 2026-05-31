@@ -68,11 +68,12 @@ All HTTP requests are routed through the `peticion()` helper function in `servic
 
 ```js
 async function peticion(url, options = {}) {
+  
   const res = await fetch(`${API}${url}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-
+  
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Error en la petición");
   return data;

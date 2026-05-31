@@ -1,5 +1,5 @@
 ---
-title: "Frontend Setup: Run GymSys with Vite and React"
+title: "Frontend Setup: Install and Run the GymSys React App"
 sidebarTitle: "Frontend"
 description: "Step-by-step instructions for installing and running the GymSys React frontend locally using Vite, including how to change the backend API URL."
 ---
@@ -85,7 +85,7 @@ const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
 With this change in place, create a `.env.local` file in the project root and set the variable:
 
-```bash
+```env
 VITE_API_URL=https://api.yourdomain.com/api
 ```
 

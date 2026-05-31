@@ -1,10 +1,10 @@
 ---
-title: "Environment Configuration for GymSys"
+title: "GymSys Environment Configuration: API URL and CORS"
 sidebarTitle: "Environment"
-description: "Configure the GymSys frontend for different environments by overriding the backend API URL and customizing Vite build settings."
+description: "Configure the GymSys frontend for different environments by overriding the backend API URL and setting up CORS for your backend server."
 ---
 
-GymSys separates runtime configuration from source code through environment variable files. This lets you run the same build artifact against a local development backend, a staging server, or a production API without touching any JavaScript. Both the frontend (Vite) and the backend server each have their own set of variables, described below.
+GymSys separates runtime configuration from source code through environment variable files. This lets you point the frontend at a local development backend, a staging server, or a production API without modifying any JavaScript. The frontend reads one Vite environment variable; the backend variables below are a reference for whichever separate server implementation you choose to build or connect.
 
 ## Frontend Environment Variables
 
@@ -16,7 +16,7 @@ The GymSys frontend reads one environment variable at startup:
 
 To override the default, create a `.env.local` file in the project root (next to `package.json`) and set the variable:
 
-```bash
+```env
 VITE_API_URL=https://api.yourdomain.com/api
 ```
 
@@ -24,7 +24,7 @@ Vite automatically loads `.env.local` during both `vite dev` and `vite build`. B
 
 You can also use `.env.production` to set values that apply only when running `vite build`:
 
-```bash
+```env
 # .env.production
 VITE_API_URL=https://api.yourdomain.com/api
 ```
@@ -37,7 +37,7 @@ VITE_API_URL=https://api.yourdomain.com/api
 
 The backend server is not included in this repository, but a typical Node.js implementation will need the following variables. Create a `.env` file in your backend project root:
 
-```bash
+```env
 PORT=3001
 DB_CONNECTION=your_database_url
 CORS_ORIGIN=http://localhost:5173

@@ -1,7 +1,7 @@
 ---
-title: "GymSys Architecture: Frontend and API Overview"
+title: "GymSys Architecture: React Frontend and API Service Layer"
 sidebarTitle: "Architecture"
-description: "Understand how GymSys separates the React frontend from the REST API backend and how the services/api.js module bridges them."
+description: "Understand how GymSys splits the React + Vite frontend from the REST backend and how services/api.js manages all HTTP communication."
 ---
 
 GymSys follows a two-tier architecture: a React + Vite single-page application runs in the browser and communicates exclusively with a backend REST API over HTTP. The frontend never touches a database directly — all persistence is handled by the API server running at `http://localhost:3001/api`. The `services/api.js` module acts as the sole bridge between UI components and the network layer, keeping data-fetching logic out of React components and in one auditable place.
@@ -220,4 +220,5 @@ Every interaction in GymSys follows the same unidirectional path:
 | Acceso | `accesoApi.entrada()` | POST | `/api/acceso/entrada` |
 | Acceso | `accesoApi.salida()` | POST | `/api/acceso/salida` |
 | Acceso | `accesoApi.ocupacion()` | GET | `/api/acceso/ocupacion` |
+| Acceso | `accesoApi.historial()` | GET | `/api/acceso/historial/:cliente_id` |
 | Reportes | `accesoApi.ocupacion()` | GET | `/api/acceso/ocupacion` |

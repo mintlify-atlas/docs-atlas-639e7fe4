@@ -4,7 +4,7 @@ sidebarTitle: "Payments API"
 description: "Reference for the /api/pagos endpoints. Log membership fee payments and retrieve payment history with automatic total calculation."
 ---
 
-The `/api/pagos` resource records membership fee payments made by gym clients. When a payment is created, the backend automatically calculates the total charge based on the number of days contracted and increments the corresponding client's `dias_restantes` balance. All historical payment records are preserved and can be listed at any time.
+The `/api/pagos` resource records membership fee payments made by gym clients. When a payment is created, the backend calculates the total charge based on the number of days contracted. All historical payment records are preserved and can be listed at any time.
 
 ## GET /api/pagos
 
@@ -32,8 +32,8 @@ Returns an array of all payment records, ordered by most recent first.
   Number of membership days purchased in this payment.
 </ResponseField>
 
-<ResponseField name="total" type="number">
-  Total amount charged for this payment in Colombian pesos (COP).
+<ResponseField name="total" type="string | number">
+  Total amount charged for this payment in Colombian pesos (COP). The frontend reads this field as `Number(p.total)`, so the value may be returned as a string by the API.
 </ResponseField>
 
 ### Example request
@@ -61,10 +61,10 @@ curl http://localhost:3001/api/pagos
 
 ## POST /api/pagos
 
-Creates a new payment record for a client and adds the contracted days to that client's `dias_restantes` balance.
+Creates a new payment record for a client.
 
 <Note>
-  This endpoint has a side effect: after persisting the payment record, the backend increments the target client's `dias_restantes` by the value of `dias_contratados`. You do not need to call the Clients API separately to update the membership balance.
+  The frontend re-fetches the full client list immediately after a successful payment, and clients display an updated `dias_restantes` value — suggesting the backend increments the client's day balance when a payment is created. Confirm this side effect in your backend implementation.
 </Note>
 
 ### Request body
@@ -93,7 +93,7 @@ The `total` stored in the payment record is computed server-side using the follo
 | 1 – 14 | days × $8,000 |
 
 <Tip>
-  For any day count between 1 and 14 inclusive, the charge is calculated as `dias_contratados × $8,000`. Day counts other than 1–14, 15, 30, or 365 are treated as per-day values at the $8,000 rate.
+  For any day count between 1 and 14 inclusive, the charge is calculated as `dias_contratados × $8,000`. Any value outside the tiers above (i.e. not 1–14, 15, 30, or 365) returns a total of `0` — as reflected by the `else → 0` branch in `calcularTotal()` in `Pagos.jsx`.
 </Tip>
 
 ### Response fields
@@ -118,8 +118,8 @@ The `total` stored in the payment record is computed server-side using the follo
   Number of days purchased.
 </ResponseField>
 
-<ResponseField name="total" type="number">
-  Computed total amount charged (COP).
+<ResponseField name="total" type="string | number">
+  Computed total amount charged (COP). The frontend reads this as `Number(p.total)`, so the API may return this value as a string.
 </ResponseField>
 
 ### Example request
