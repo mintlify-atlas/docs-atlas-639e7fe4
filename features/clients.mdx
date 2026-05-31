@@ -1,0 +1,150 @@
+---
+title: "Client Management: Register and Manage Gym Members"
+sidebarTitle: "Clients"
+description: "GymSys lets you create, view, edit, and delete gym member records. Each member has a membership day counter and an in-gym presence flag."
+---
+
+Client management is the foundation of GymSys. Every person who trains at the gym must have a client record before they can be assigned payments or have their access tracked. The `/clientes` section lets staff list all registered members, register new ones, update existing records, and remove members who are no longer active.
+
+## Client Record Fields
+
+Each client record stores the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `nombres` | string | Full name of the member |
+| `identificacion` | string | Government-issued ID number |
+| `celular` | string | Mobile phone number |
+| `fecha_inscripcion` | date | Date the member first enrolled |
+| `genero` | enum | One of `Masculino`, `Femenino`, or `Otro` |
+| `dias_restantes` | number | Remaining membership days — computed and maintained server-side |
+| `en_gimnasio` | boolean | Whether the member is currently inside the gym — set server-side by the Access Control module |
+
+<Note>
+  `dias_restantes` and `en_gimnasio` are **server-computed fields**. They are not editable through the client form; they are updated automatically when payments are recorded or entry/exit events are logged.
+</Note>
+
+## Listing Clients
+
+Navigating to `/clientes` loads the full client roster. The page calls `clientesApi.listar()` on mount and renders every record in a table with the following columns: **ID**, **Nombres**, **Identificación**, **Celular**, **Fecha Inscripción**, **Género**, **Días Rest.**, **Estado**, and **Acciones**.
+
+The **Estado** column shows a colour-coded badge:
+- **Dentro** (green) — `en_gimnasio` is `true`
+- **Fuera** (grey) — `en_gimnasio` is `false`
+
+Each row includes two action buttons:
+- **Editar** — navigates to `/clientes/editar/:id`
+- **Eliminar** — opens a browser confirmation dialog; on confirmation calls `clientesApi.eliminar(id)`
+
+```js
+// HTTP equivalent
+GET http://localhost:3001/api/clientes
+```
+
+## Creating a Client
+
+Navigate to `/clientes/nuevo` or click **+ Nuevo Cliente** from the client list or the dashboard quick-action shortcut.
+
+The registration form contains five fields, all of which are required:
+
+| Field | Input type | Default value |
+|-------|-----------|---------------|
+| Nombres completos | text | — |
+| Identificación | text | — |
+| Número de celular | text | — |
+| Fecha de inscripción | date | Today's date |
+| Género | select | `Masculino` |
+
+Client-side validation runs on submit. If any of `nombres`, `identificacion`, `celular`, or `fecha_inscripcion` is empty or blank, the form displays an **"Todos los campos son obligatorios"** error and does not call the API.
+
+On successful submission the form calls `clientesApi.crear(form)` and redirects to `/clientes`.
+
+```jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+
+  if (!form.nombres.trim() || !form.identificacion.trim() || !form.celular.trim() || !form.fecha_inscripcion) {
+    setError('Todos los campos son obligatorios');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    if (esEdicion) {
+      await clientesApi.actualizar(id, form);
+    } else {
+      await clientesApi.crear(form);
+    }
+    navigate('/clientes');
+  } catch (e) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+```js
+// HTTP equivalent
+POST http://localhost:3001/api/clientes
+Content-Type: application/json
+
+{
+  "nombres": "Juan Pérez",
+  "identificacion": "1234567890",
+  "celular": "3001234567",
+  "fecha_inscripcion": "2024-01-15",
+  "genero": "Masculino"
+}
+```
+
+## Editing a Client
+
+Navigate to `/clientes/editar/:id` by clicking the **Editar** button on any row. The same `ClienteForm` component is rendered in edit mode (`esEdicion = true`).
+
+On mount, the form calls `clientesApi.obtener(id)` to fetch the existing record and pre-fills all five editable fields. The `dias_restantes` and `en_gimnasio` fields are not shown in the form because they are managed server-side.
+
+Validation rules are identical to creation. On success, `clientesApi.actualizar(id, form)` is called and the user is redirected back to `/clientes`.
+
+```js
+// HTTP equivalents
+GET  http://localhost:3001/api/clientes/:id
+PUT  http://localhost:3001/api/clientes/:id
+Content-Type: application/json
+
+{
+  "nombres": "Juan Pérez",
+  "identificacion": "1234567890",
+  "celular": "3001234567",
+  "fecha_inscripcion": "2024-01-15",
+  "genero": "Masculino"
+}
+```
+
+## Deleting a Client
+
+Clicking **Eliminar** on any row triggers a browser `confirm()` dialog with the message:
+
+> ¿Eliminar a "[nombres]"? Esta acción no se puede deshacer.
+
+If confirmed, `clientesApi.eliminar(id)` is called. On success, the row is removed from the local state immediately without requiring a full page reload.
+
+```js
+// HTTP equivalent
+DELETE http://localhost:3001/api/clientes/:id
+```
+
+<Warning>
+  Deleting a client is permanent and cannot be undone. All associated payment records and access history stored server-side may also be affected. Always confirm with the staff member before proceeding.
+</Warning>
+
+## API Reference
+
+| Method | Call | HTTP Equivalent |
+|--------|------|-----------------|
+| List all clients | `clientesApi.listar()` | `GET /api/clientes` |
+| Get single client | `clientesApi.obtener(id)` | `GET /api/clientes/:id` |
+| Create client | `clientesApi.crear(data)` | `POST /api/clientes` |
+| Update client | `clientesApi.actualizar(id, data)` | `PUT /api/clientes/:id` |
+| Delete client | `clientesApi.eliminar(id)` | `DELETE /api/clientes/:id` |

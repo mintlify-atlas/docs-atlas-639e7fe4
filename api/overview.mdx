@@ -1,0 +1,68 @@
+---
+title: "GymSys REST API: Base URL, Headers, and Error Format"
+sidebarTitle: "Overview"
+description: "GymSys communicates with a REST API backend at http://localhost:3001/api. All requests use JSON and follow a consistent error response format."
+---
+
+GymSys is a React + Vite gym management application that communicates with a dedicated REST API backend. The frontend and backend exchange data exclusively as JSON over HTTP. This reference covers the base URL, request format, error handling conventions, and the available resource endpoints.
+
+## Base URL
+
+All API endpoints are prefixed with the following base URL:
+
+```
+http://localhost:3001/api
+```
+
+This value is defined in `services/api.js` and can be overridden by setting the `VITE_API_URL` environment variable in your Vite project before the build. When running locally, ensure the backend server is started on port `3001` before launching the frontend.
+
+## Request Format
+
+Every request to the API must include a `Content-Type: application/json` header, and every response body is also JSON. The `peticion()` helper in `services/api.js` centralises this behaviour and is used by all resource modules (`clientesApi`, `pagosApi`, `accesoApi`):
+
+```js
+const API = "http://localhost:3001/api";
+
+async function peticion(url, options = {}) {
+  const res = await fetch(`${API}${url}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Error en la petición");
+  return data;
+}
+```
+
+The helper merges any caller-supplied `options` (such as `method` and `body`) with the default JSON header, parses the response body, and throws a descriptive `Error` when the HTTP status is not in the 2xx range.
+
+## Error Handling
+
+When a request fails, the API returns a non-2xx HTTP status code and a JSON body in the following shape:
+
+```json
+{ "error": "Cliente no encontrado" }
+```
+
+The `peticion()` helper reads `data.error` and throws a JavaScript `Error` whose `message` is that string. If the backend returns a non-OK status without an `error` field, the fallback message `"Error en la petición"` is used instead. UI components catch this error and display it to the user.
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Clients API" icon="users" href="/api/clients">
+    List, create, update, and delete gym member records. Tracks membership days remaining and current gym presence.
+  </Card>
+  <Card title="Payments API" icon="credit-card" href="/api/payments">
+    Log membership fee payments for clients. Automatically calculates the total based on days contracted and updates the client's remaining days.
+  </Card>
+  <Card title="Access API" icon="door-open" href="/api/access">
+    Register member entries and exits, query current gym occupancy, and retrieve per-member access history.
+  </Card>
+</CardGroup>
+
+## Authentication
+
+<Note>
+  The current version of GymSys does not implement authentication or API keys. All endpoints are publicly accessible on the configured host. For production deployments, add authentication middleware (such as JWT bearer tokens or session-based auth) to the backend to restrict access to authorised users only.
+</Note>

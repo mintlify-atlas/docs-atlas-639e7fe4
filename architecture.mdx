@@ -1,0 +1,223 @@
+---
+title: "GymSys Architecture: Frontend and API Overview"
+sidebarTitle: "Architecture"
+description: "Understand how GymSys separates the React frontend from the REST API backend and how the services/api.js module bridges them."
+---
+
+GymSys follows a two-tier architecture: a React + Vite single-page application runs in the browser and communicates exclusively with a backend REST API over HTTP. The frontend never touches a database directly — all persistence is handled by the API server running at `http://localhost:3001/api`. The `services/api.js` module acts as the sole bridge between UI components and the network layer, keeping data-fetching logic out of React components and in one auditable place.
+
+## Frontend (React + Vite)
+
+### Entry point
+
+`main.jsx` bootstraps the application by mounting `<App />` inside React's `StrictMode`, which enables additional runtime warnings during development.
+
+```jsx
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+```
+
+### Routing (App.jsx)
+
+`App.jsx` wraps the entire application in a `BrowserRouter` and defines all client-side routes. A persistent `<Navbar />` sidebar sits outside the `<Routes>` tree so it renders on every page.
+
+```jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Inicio from './pages/Inicio';
+import Clientes from './pages/Clientes';
+import ClienteForm from './pages/ClienteForm';
+import Pagos from './pages/Pagos';
+import Acceso from './pages/Acceso';
+import Reportes from './pages/Reportes';
+import './App.css';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <div className="app-layout">
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Inicio />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/clientes/nuevo" element={<ClienteForm />} />
+            <Route path="/clientes/editar/:id" element={<ClienteForm />} />
+            <Route path="/pagos" element={<Pagos />} />
+            <Route path="/acceso" element={<Acceso />} />
+            <Route path="/reportes" element={<Reportes />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
+```
+
+The full route map is:
+
+| Path | Component | Purpose |
+|---|---|---|
+| `/` | `Inicio` | Dashboard — stats overview |
+| `/clientes` | `Clientes` | Client list |
+| `/clientes/nuevo` | `ClienteForm` | New client form |
+| `/clientes/editar/:id` | `ClienteForm` | Edit existing client |
+| `/pagos` | `Pagos` | Payment list and new payment form |
+| `/acceso` | `Acceso` | Entry / exit control and occupancy |
+| `/reportes` | `Reportes` | Reports — client list and occupancy |
+
+### Navbar component
+
+`Navbar.jsx` renders a sidebar using an array of link definitions. Each item is rendered as a React Router `NavLink`. The `end` prop on the root path (`/`) prevents it from matching as active on every page.
+
+```jsx
+import { NavLink } from 'react-router-dom';
+
+const links = [
+  { to: '/', label: 'Inicio', icon: '🏠' },
+  { to: '/clientes', label: 'Clientes', icon: '👥' },
+  { to: '/pagos', label: 'Pagos', icon: '💰' },
+  { to: '/acceso', label: 'Control Acceso', icon: '🚪' },
+  { to: '/reportes', label: 'Reportes', icon: '📊' },
+];
+
+export default function Navbar() {
+  return (
+    <nav className="navbar">
+      <div className="navbar-brand">
+        <strong>🏋️ GymSys</strong>
+      </div>
+      <ul className="navbar-links">
+        {links.map((link) => (
+          <li key={link.to}>
+            <NavLink
+              to={link.to}
+              end={link.to === '/'}
+              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+            >
+              <span>{link.icon}</span>
+              {link.label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+```
+
+---
+
+## API Service Layer (services/api.js)
+
+All network requests originate from `services/api.js`. Nothing else in the codebase calls `fetch` directly, which means the backend base URL and request defaults live in exactly one file.
+
+### Base URL and shared helper
+
+```js
+const API = "http://localhost:3001/api";
+
+async function peticion(url, options = {}) {
+  const res = await fetch(`${API}${url}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Error en la petición");
+  return data;
+}
+```
+
+`peticion()` is not exported — it is an internal helper used by every public API object. It:
+
+1. Prepends the base URL to the path fragment.
+2. Sets `Content-Type: application/json` on every request.
+3. Parses the JSON response body.
+4. Throws a descriptive `Error` when the HTTP status is not in the 2xx range.
+
+### clientesApi
+
+Handles all CRUD operations for gym members.
+
+```js
+export const clientesApi = {
+  listar: () => peticion("/clientes"),
+  obtener: (id) => peticion(`/clientes/${id}`),
+  crear: (data) => peticion("/clientes", { method: "POST", body: JSON.stringify(data) }),
+  actualizar: (id, data) => peticion(`/clientes/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  eliminar: (id) => peticion(`/clientes/${id}`, { method: "DELETE" }),
+};
+```
+
+### pagosApi
+
+Records and retrieves payment transactions.
+
+```js
+export const pagosApi = {
+  listar: () => peticion("/pagos"),
+  crear: (data) =>
+    peticion("/pagos", { method: "POST", body: JSON.stringify(data) }),
+};
+```
+
+### accesoApi
+
+Controls gym entry and exit events and exposes live occupancy data.
+
+```js
+export const accesoApi = {
+  entrada: (cliente_id) =>
+    peticion("/acceso/entrada", {
+      method: "POST",
+      body: JSON.stringify({ cliente_id }),
+    }),
+
+  salida: (cliente_id) =>
+    peticion("/acceso/salida", {
+      method: "POST",
+      body: JSON.stringify({ cliente_id }),
+    }),
+
+  ocupacion: () => peticion("/acceso/ocupacion"),
+
+  historial: (cliente_id) => peticion(`/acceso/historial/${cliente_id}`),
+};
+```
+
+---
+
+## Data Flow
+
+Every interaction in GymSys follows the same unidirectional path:
+
+1. A React component mounts or an event fires (e.g., a form submission or a button click).
+2. The component calls the relevant method on one of the exported API objects (`clientesApi`, `pagosApi`, or `accesoApi`).
+3. That method delegates to `peticion()`, which calls `fetch()` against the REST endpoint.
+4. The JSON response is returned as a resolved Promise value.
+5. The component stores the result in local state (typically via `useState` + `useEffect`), triggering a re-render.
+
+### Component → endpoint reference
+
+| Component | API Method | HTTP Method | Endpoint |
+|---|---|---|---|
+| Clientes | `clientesApi.listar()` | GET | `/api/clientes` |
+| ClienteForm | `clientesApi.crear()` | POST | `/api/clientes` |
+| ClienteForm | `clientesApi.actualizar()` | PUT | `/api/clientes/:id` |
+| ClienteForm | `clientesApi.obtener()` | GET | `/api/clientes/:id` |
+| Clientes | `clientesApi.eliminar()` | DELETE | `/api/clientes/:id` |
+| Pagos | `pagosApi.listar()` | GET | `/api/pagos` |
+| Pagos | `pagosApi.crear()` | POST | `/api/pagos` |
+| Acceso | `accesoApi.entrada()` | POST | `/api/acceso/entrada` |
+| Acceso | `accesoApi.salida()` | POST | `/api/acceso/salida` |
+| Acceso | `accesoApi.ocupacion()` | GET | `/api/acceso/ocupacion` |
+| Reportes | `accesoApi.ocupacion()` | GET | `/api/acceso/ocupacion` |

@@ -1,0 +1,185 @@
+---
+title: "REST API Endpoints for Gym Access Control"
+sidebarTitle: "Access API"
+description: "Reference for the /api/acceso endpoints: register member entry and exit, query current occupancy, and retrieve per-member access history."
+---
+
+The `/api/acceso` resource manages real-time gym access control. It tracks which clients are currently inside the facility (`en_gimnasio`), deducts a membership day each time a client enters, and maintains a complete access log per member. Use the occupancy endpoint to display a live list of clients in the gym and the history endpoint to audit an individual member's visits.
+
+## POST /api/acceso/entrada
+
+Registers a client entry event. The backend sets the client's `en_gimnasio` flag to `true` and deducts one day from their `dias_restantes` balance.
+
+<Warning>
+  If the client's `dias_restantes` is `0` or less, the backend should reject the entry request and return an error. The GymSys frontend disables the "Entrada" button for clients with no days remaining, but API consumers must handle the error response directly.
+</Warning>
+
+### Request body
+
+<ParamField body="cliente_id" type="number" required>
+  The unique ID of the client entering the gym.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="nombres" type="string">
+  Full name of the client who entered.
+</ResponseField>
+
+<ResponseField name="dias_restantes_actualizados" type="number">
+  The client's updated membership day balance after deducting one day for this entry.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST http://localhost:3001/api/acceso/entrada \
+  -H 'Content-Type: application/json' \
+  -d '{"cliente_id": 1}'
+```
+
+### Example response
+
+```json
+{
+  "nombres": "Juan Pérez",
+  "dias_restantes_actualizados": 21
+}
+```
+
+---
+
+## POST /api/acceso/salida
+
+Registers a client exit event. The backend sets the client's `en_gimnasio` flag to `false`.
+
+### Request body
+
+<ParamField body="cliente_id" type="number" required>
+  The unique ID of the client exiting the gym.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="nombres" type="string">
+  Full name of the client who exited.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST http://localhost:3001/api/acceso/salida \
+  -H 'Content-Type: application/json' \
+  -d '{"cliente_id": 1}'
+```
+
+### Example response
+
+```json
+{
+  "nombres": "Juan Pérez"
+}
+```
+
+---
+
+## GET /api/acceso/ocupacion
+
+Returns an array of all clients who are currently inside the gym (`en_gimnasio = true`). Use this endpoint to display real-time occupancy on a dashboard or reception screen.
+
+### Response fields
+
+<ResponseField name="id" type="number">
+  Unique identifier of the client.
+</ResponseField>
+
+<ResponseField name="nombres" type="string">
+  Full name of the client.
+</ResponseField>
+
+<ResponseField name="identificacion" type="string">
+  National ID or document number of the client.
+</ResponseField>
+
+<ResponseField name="celular" type="string">
+  Mobile phone number of the client.
+</ResponseField>
+
+<ResponseField name="dias_restantes" type="number">
+  Number of membership days the client still has available.
+</ResponseField>
+
+### Example request
+
+```bash
+curl http://localhost:3001/api/acceso/ocupacion
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": 1,
+    "nombres": "Juan Pérez",
+    "identificacion": "1234567890",
+    "celular": "3001234567",
+    "dias_restantes": 21
+  }
+]
+```
+
+---
+
+## GET /api/acceso/historial/:cliente_id
+
+Returns the full access log (entries and exits) for a specific client, ordered chronologically.
+
+### Path parameters
+
+<ParamField path="cliente_id" type="number" required>
+  The unique ID of the client whose access history you want to retrieve.
+</ParamField>
+
+### Response fields
+
+<ResponseField name="id" type="number">
+  Unique identifier for the access log entry.
+</ResponseField>
+
+<ResponseField name="cliente_id" type="number">
+  ID of the client this log entry belongs to.
+</ResponseField>
+
+<ResponseField name="tipo" type="string">
+  Type of access event. Typically `"entrada"` (entry) or `"salida"` (exit).
+</ResponseField>
+
+<ResponseField name="fecha" type="string">
+  Timestamp of the access event in ISO 8601 format.
+</ResponseField>
+
+### Example request
+
+```bash
+curl http://localhost:3001/api/acceso/historial/1
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": 45,
+    "cliente_id": 1,
+    "tipo": "entrada",
+    "fecha": "2024-03-10T08:30:00.000Z"
+  },
+  {
+    "id": 46,
+    "cliente_id": 1,
+    "tipo": "salida",
+    "fecha": "2024-03-10T10:15:00.000Z"
+  }
+]
+```

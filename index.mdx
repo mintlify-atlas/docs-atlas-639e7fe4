@@ -1,20 +1,60 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "GymSys: Web-Based Gym Management System"
+sidebarTitle: "Home"
+description: "GymSys is a full-stack web application for managing gym members, payments, access control, and occupancy reports from a single dashboard."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+GymSys is a React-based gym management information system that helps you track member registrations, record membership payments, monitor real-time gym access, and generate occupancy reports — all from one web interface backed by a REST API.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up GymSys and have it running locally in minutes.
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand how the frontend, backend, and API layer fit together.
+  </Card>
+  <Card title="Core Features" icon="stars" href="/features/dashboard">
+    Explore the dashboard, client management, payments, access control, and reports.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Full reference for every REST endpoint exposed by the GymSys backend.
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## What GymSys Does
+
+GymSys covers the day-to-day operations of a gym in four main areas:
+
+<CardGroup cols={2}>
+  <Card title="Client Management" icon="users" href="/features/clients">
+    Register, edit, and delete member records. Track remaining membership days and current gym presence.
+  </Card>
+  <Card title="Payments" icon="money-bill" href="/features/payments">
+    Log membership payments with tiered pricing packages ranging from single-day passes to annual memberships.
+  </Card>
+  <Card title="Access Control" icon="door-open" href="/features/access-control">
+    Record member entries and exits in real time. See who is currently inside the gym at a glance.
+  </Card>
+  <Card title="Reports" icon="chart-bar" href="/features/reports">
+    View a complete member roster and a live occupancy snapshot in tabular report format.
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone both the frontend and backend repositories to your local machine.
+  </Step>
+  <Step title="Configure the environment">
+    Set the backend API URL and database connection. The frontend expects the API at `http://localhost:3001/api` by default.
+  </Step>
+  <Step title="Start the backend">
+    Launch the REST API server so the frontend can communicate with the database.
+  </Step>
+  <Step title="Start the frontend">
+    Run the Vite development server and open the app in your browser.
+  </Step>
+</Steps>
+
+See the [Quickstart](/quickstart) guide for step-by-step instructions.

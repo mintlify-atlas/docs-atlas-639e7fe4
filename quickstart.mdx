@@ -1,47 +1,80 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with GymSys in Minutes"
+sidebarTitle: "Quickstart"
+description: "Learn how to install, configure, and run GymSys locally with a working frontend and backend in under 10 minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This quickstart walks you through cloning the repository, installing dependencies, connecting to a backend API, and opening GymSys in your browser — everything you need to have a fully working local environment in under 10 minutes.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Clone the repository">
+    Clone the GymSys source code from GitHub and navigate into the project directory.
 
     ```bash
-    npm install your-package
+    git clone https://github.com/Hansel-Pan/sistema-de-informacion-web-para-un-gimnasio.git
+    cd sistema-de-informacion-web-para-un-gimnasio
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
+  <Step title="Install frontend dependencies">
+    Install the Node.js packages required by the React + Vite frontend.
+
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+
+      ```bash pnpm
+      pnpm install
+      ```
+    </CodeGroup>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Set up the backend">
+    GymSys requires a compatible REST API server running at `http://localhost:3001/api`. The base URL is hardcoded in `services/api.js`:
+
+    ```js
+    const API = "http://localhost:3001/api";
+    ```
+
+    Make sure your backend server is started and listening on port `3001` before you launch the frontend. If you are using a different host or port, update the `API` constant in `services/api.js` to match.
+
+    Refer to the backend setup guide for step-by-step instructions on starting the API server.
+  </Step>
+
+  <Step title="Start the frontend">
+    Launch the Vite development server.
 
     ```bash
-    your-cli start
+    npm run dev
     ```
+
+    Vite will print a local URL — by default it is `http://localhost:5173`. Open that address in your browser to see GymSys.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## What You'll See
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+Once the app loads you will land on the **Inicio** dashboard. A sidebar on the left provides navigation to all five main sections of the application:
+
+| Page | Path | Purpose |
+|---|---|---|
+| 🏠 Inicio | `/` | Dashboard with total clients, active memberships, and current occupancy |
+| 👥 Clientes | `/clientes` | Client list with add, edit, and delete actions |
+| 💰 Pagos | `/pagos` | Payment log and new payment form |
+| 🚪 Control Acceso | `/acceso` | Record client entries and exits; view current occupancy |
+| 📊 Reportes | `/reportes` | Full client list and occupancy snapshot |
+
+Each sidebar link uses React Router's `NavLink` with an `active` CSS class applied to the currently visited page, so you always know where you are in the app.
+
+<Tip>
+  Start the backend API server **before** opening the frontend in your browser. GymSys fetches data on page load, so if the backend is not reachable at `http://localhost:3001/api` the API calls will fail and the pages will appear empty or show an error.
 </Tip>
+
+<Note>
+  For production deployment and advanced configuration options see [Frontend Setup](/setup/frontend) and [Backend Setup](/setup/backend).
+</Note>

@@ -1,0 +1,94 @@
+---
+title: "Backend Setup: Configure the GymSys REST API Server"
+sidebarTitle: "Backend"
+description: "GymSys requires a REST API backend running on port 3001. Learn the required endpoints, expected data shapes, and how to connect a backend implementation."
+---
+
+GymSys is a frontend-only React application. It does not bundle or ship a backend server — instead, it communicates with a separate REST API over HTTP. Before running the frontend, you must have a compatible backend implementation running locally (or remotely) that exposes the endpoints described on this page.
+
+## Required API Base URL
+
+All API calls in GymSys originate from a single constant defined at the top of `services/api.js`:
+
+```js
+const API = "http://localhost:3001/api";
+```
+
+Every request the frontend makes is prefixed with this value. If your backend runs on a different host or port, this is the only line you need to change. See the [Environment Configuration](/setup/environment) page for how to make this value configurable without modifying source code.
+
+## Required Endpoints
+
+The table below lists every endpoint the frontend calls, grouped by resource. Your backend implementation must respond to all of them.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/clientes` | Returns an array of all client objects |
+| `GET` | `/api/clientes/:id` | Returns a single client object by ID |
+| `POST` | `/api/clientes` | Creates a new client |
+| `PUT` | `/api/clientes/:id` | Updates an existing client by ID |
+| `DELETE` | `/api/clientes/:id` | Deletes a client by ID |
+| `GET` | `/api/pagos` | Returns an array of all payment records |
+| `POST` | `/api/pagos` | Creates a new payment record |
+| `POST` | `/api/acceso/entrada` | Records a client entry event |
+| `POST` | `/api/acceso/salida` | Records a client exit event |
+| `GET` | `/api/acceso/ocupacion` | Returns an array of clients currently inside the gym |
+| `GET` | `/api/acceso/historial/:cliente_id` | Returns the full access history for a given client |
+
+## Expected Response Fields
+
+The frontend reads specific fields from the JSON responses returned by your backend. Returning unexpected field names or omitting required ones will cause the UI to render incorrectly or throw errors.
+
+### Client object (`/api/clientes`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique client identifier |
+| `nombres` | string | Client's full name |
+| `identificacion` | string | National ID or document number |
+| `celular` | string | Mobile phone number |
+| `fecha_inscripcion` | string | Enrollment date (ISO 8601 recommended) |
+| `genero` | string | Gender (`M` or `F`) |
+| `dias_restantes` | number | Remaining active membership days |
+| `en_gimnasio` | boolean | Whether the client is currently inside the gym |
+
+### Payment object (`/api/pagos`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique payment identifier |
+| `nombres` | string | Client's full name (denormalized for display) |
+| `identificacion` | string | Client's document number |
+| `fecha_pago` | string | Date the payment was recorded (ISO 8601 recommended) |
+| `dias_contratados` | number | Number of membership days purchased |
+| `total` | number | Total amount charged |
+
+## Error Handling
+
+All HTTP requests are routed through the `peticion()` helper function in `services/api.js`. On non-OK HTTP status codes, the function reads the `error` field from the JSON response body and throws it as a JavaScript `Error`. This means your backend must return a JSON object with an `error` string property whenever it responds with a 4xx or 5xx status code.
+
+```js
+async function peticion(url, options = {}) {
+  const res = await fetch(`${API}${url}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Error en la petición");
+  return data;
+}
+```
+
+**Example error response shape** your backend should return on failure:
+
+```json
+{
+  "error": "Cliente no encontrado"
+}
+```
+
+If the `error` field is absent, the frontend falls back to the generic message `"Error en la petición"`.
+
+<Note>
+  CORS must be enabled on your backend to allow requests from the Vite development server, which runs at `http://localhost:5173` by default. In production, set the allowed origin to match your deployed frontend domain. See the [Environment Configuration](/setup/environment) page for a sample backend `.env` that includes `CORS_ORIGIN`.
+</Note>

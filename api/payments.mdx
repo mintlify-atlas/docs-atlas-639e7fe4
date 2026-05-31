@@ -1,0 +1,148 @@
+---
+title: "REST API Endpoints for Gym Payment Records"
+sidebarTitle: "Payments API"
+description: "Reference for the /api/pagos endpoints. Log membership fee payments and retrieve payment history with automatic total calculation."
+---
+
+The `/api/pagos` resource records membership fee payments made by gym clients. When a payment is created, the backend automatically calculates the total charge based on the number of days contracted and increments the corresponding client's `dias_restantes` balance. All historical payment records are preserved and can be listed at any time.
+
+## GET /api/pagos
+
+Returns an array of all payment records, ordered by most recent first.
+
+### Response fields
+
+<ResponseField name="id" type="number">
+  Unique identifier for the payment record.
+</ResponseField>
+
+<ResponseField name="nombres" type="string">
+  Full name of the client who made the payment.
+</ResponseField>
+
+<ResponseField name="identificacion" type="string">
+  National ID or document number of the client.
+</ResponseField>
+
+<ResponseField name="fecha_pago" type="string">
+  Date the payment was recorded, in ISO 8601 format (e.g. `2024-03-10`).
+</ResponseField>
+
+<ResponseField name="dias_contratados" type="number">
+  Number of membership days purchased in this payment.
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total amount charged for this payment in Colombian pesos (COP).
+</ResponseField>
+
+### Example request
+
+```bash
+curl http://localhost:3001/api/pagos
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": 12,
+    "nombres": "Juan Pérez",
+    "identificacion": "1234567890",
+    "fecha_pago": "2024-03-10",
+    "dias_contratados": 30,
+    "total": 90000
+  }
+]
+```
+
+---
+
+## POST /api/pagos
+
+Creates a new payment record for a client and adds the contracted days to that client's `dias_restantes` balance.
+
+<Note>
+  This endpoint has a side effect: after persisting the payment record, the backend increments the target client's `dias_restantes` by the value of `dias_contratados`. You do not need to call the Clients API separately to update the membership balance.
+</Note>
+
+### Request body
+
+<ParamField body="cliente_id" type="number" required>
+  The unique ID of the client making the payment. Must correspond to an existing client.
+</ParamField>
+
+<ParamField body="fecha_pago" type="string" required>
+  The date of the payment in ISO 8601 format (`YYYY-MM-DD`).
+</ParamField>
+
+<ParamField body="dias_contratados" type="number" required>
+  Number of membership days being purchased. Accepted range: `1`–`365`.
+</ParamField>
+
+### Pricing logic
+
+The `total` stored in the payment record is computed server-side using the following pricing tiers, which mirror the `calcularTotal()` function in `Pagos.jsx`:
+
+| Days contracted | Price (COP) |
+|---|---|
+| 365 | $1,000,000 |
+| 30 | $90,000 |
+| 15 | $50,000 |
+| 1 – 14 | days × $8,000 |
+
+<Tip>
+  For any day count between 1 and 14 inclusive, the charge is calculated as `dias_contratados × $8,000`. Day counts other than 1–14, 15, 30, or 365 are treated as per-day values at the $8,000 rate.
+</Tip>
+
+### Response fields
+
+<ResponseField name="id" type="number">
+  Unique identifier for the newly created payment record.
+</ResponseField>
+
+<ResponseField name="nombres" type="string">
+  Full name of the client associated with this payment.
+</ResponseField>
+
+<ResponseField name="identificacion" type="string">
+  National ID or document number of the client.
+</ResponseField>
+
+<ResponseField name="fecha_pago" type="string">
+  Date of the payment in ISO 8601 format.
+</ResponseField>
+
+<ResponseField name="dias_contratados" type="number">
+  Number of days purchased.
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Computed total amount charged (COP).
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST http://localhost:3001/api/pagos \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "cliente_id": 1,
+    "fecha_pago": "2024-03-10",
+    "dias_contratados": 30
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": 12,
+  "nombres": "Juan Pérez",
+  "identificacion": "1234567890",
+  "fecha_pago": "2024-03-10",
+  "dias_contratados": 30,
+  "total": 90000
+}
+```

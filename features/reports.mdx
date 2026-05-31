@@ -1,0 +1,77 @@
+---
+title: "Reports: Member Roster and Live Occupancy Data"
+sidebarTitle: "Reports"
+description: "GymSys provides two built-in reports: a complete registered member list with membership status, and a real-time snapshot of current gym occupancy."
+---
+
+The Reports module at `/reportes` gives staff a read-only, consolidated view of the gym's member data. It provides two reports accessible through tab buttons at the top of the page: a full roster of all registered clients with their membership status, and a real-time snapshot of every member currently inside the gym. No actions — such as entry, exit, or payment — can be performed from this page; it is purely for viewing and verification.
+
+## General Client List
+
+Click the **Listado General de Clientes** tab to see the complete member roster. This report calls `clientesApi.listar()` on page mount and displays all records in a single table headed **"Todos los clientes inscritos (N)"**, where N is the total number of returned records.
+
+The table includes the following columns:
+
+| Column | Description |
+|--------|-------------|
+| Nombres | Full name of the member |
+| Identificación | Government ID number |
+| Celular | Mobile phone number |
+| Fecha Inscripción | Enrollment date, formatted as a locale date string |
+| Género | `Masculino`, `Femenino`, or `Otro` |
+| Días Rest. | Remaining membership days |
+| Estado | Presence badge — see below |
+
+The **Estado** column renders a colour-coded badge based on the `en_gimnasio` flag:
+- **Dentro** — green badge (`badge-success`) when `en_gimnasio` is `true`
+- **Fuera** — grey badge (`badge-secondary`) when `en_gimnasio` is `false`
+
+```js
+// Fetch all clients for the roster report
+clientesApi.listar()
+
+// HTTP equivalent
+GET http://localhost:3001/api/clientes
+```
+
+## Current Occupancy
+
+Click the **Ocupación Actual** tab to switch to the live occupancy report. This report is powered by `accesoApi.ocupacion()`, also called on page mount, and the results are displayed in a card headed **"Personas dentro del gimnasio ahora (N)"**, where N is the current occupant count.
+
+The occupancy table contains:
+
+| Column | Description |
+|--------|-------------|
+| Nombres | Full name of the member |
+| Identificación | Government ID number |
+| Celular | Mobile phone number |
+| Género | Gender of the member |
+| Días Rest. | Remaining membership days |
+
+If no one is currently inside the gym, an empty-state message reads: *"No hay nadie en el gimnasio en este momento."*
+
+```js
+// Fetch current occupancy for the occupancy report
+accesoApi.ocupacion()
+
+// HTTP equivalent
+GET http://localhost:3001/api/acceso/ocupacion
+```
+
+## Switching Between Reports
+
+The two reports are controlled by a tab bar at the top of the page. The component stores the active tab in local state (`tab`), initialising to `'clientes'`. Clicking either tab button sets the state to `'clientes'` or `'ocupacion'`, and only the corresponding card is rendered.
+
+Both API calls — `clientesApi.listar()` and `accesoApi.ocupacion()` — are made in the same `useEffect` on mount regardless of which tab is active, so switching between tabs is instant with no additional network requests.
+
+```jsx
+// Both data sets are loaded together when the page mounts
+useEffect(() => {
+  clientesApi.listar().then(setClientes).catch(() => {});
+  accesoApi.ocupacion().then(setOcupacion).catch(() => {});
+}, []);
+```
+
+<Tip>
+  Both reports are fetched once when the page first loads. If access events or new payments have occurred since you opened the page, **reload the page** to pull the latest data from the server.
+</Tip>

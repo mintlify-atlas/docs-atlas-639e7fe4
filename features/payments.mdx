@@ -1,0 +1,97 @@
+---
+title: "Payments: Record Membership Fees and Pricing Tiers"
+sidebarTitle: "Payments"
+description: "GymSys tracks gym membership payments with support for daily, 15-day, 30-day, and annual packages, automatically calculating the total amount due."
+---
+
+The Payments module lets staff record membership fee transactions for any registered client. Each payment is tied to a specific client, a payment date, and a number of contracted days. GymSys automatically calculates the amount owed based on the selected day count using a built-in pricing schedule, and the server increments the client's `dias_restantes` counter when the payment is saved successfully.
+
+## Pricing Packages
+
+GymSys uses a tiered pricing model defined in the `PRECIOS` constant inside `Pagos.jsx`. The price per session breaks when the contracted duration hits a package threshold:
+
+| Days | Label | Price |
+|------|-------|-------|
+| 1 | 1 día | $8,000/day |
+| 2 – 14 | Daily rate | $8,000/day each |
+| 15 | Paquete 15 días | $50,000 |
+| 30 | Paquete 30 días | $90,000 |
+| 365 | Año completo | $1,000,000 |
+
+Any value between 1 and 14 is billed at the daily rate of $8,000 per day. Entering exactly 15, 30, or 365 days activates the corresponding fixed package price. Values outside the 1–365 range are not accepted by the form.
+
+## Recording a Payment
+
+Navigate to `/pagos` and fill out the **Nuevo Pago** form:
+
+1. **Cliente** — select from the dropdown, which shows each client's full name, government ID, and current remaining days in the format `{nombres} - {identificacion} (Días restantes: {dias_restantes})`.
+2. **Fecha del pago** — date picker, defaults to today.
+3. **Días contratados** — numeric input between 1 and 365. The calculated total updates in real time below the field as you type.
+
+The total is derived client-side using `calcularTotal()` and displayed on the submit button as **Registrar Pago ($\{total\})**. After a successful POST, the server returns the saved payment including the confirmed `total`, and the client list is refreshed so `dias_restantes` values reflect the newly added days.
+
+### `calcularTotal` function
+
+```js
+function calcularTotal(dias) {
+  if (dias === 365) return 1000000;
+  if (dias === 30) return 90000;
+  if (dias === 15) return 50000;
+  if (dias >= 1 && dias <= 14) return dias * 8000;
+  return 0;
+}
+```
+
+The function returns `0` for any day count that does not fall within the defined tiers, which means the submit button will show **$0** as a visual cue that an out-of-range value has been entered.
+
+<Note>
+  The total is calculated client-side purely for display. The authoritative total is computed and stored by the REST API when the payment is `POST`ed. Always verify the confirmed total in the success message that appears after submission.
+</Note>
+
+### API call
+
+```js
+// Create a payment
+pagosApi.crear({
+  cliente_id: 5,          // numeric ID of the selected client
+  fecha_pago: "2024-06-01",
+  dias_contratados: 30,
+})
+
+// HTTP equivalent
+POST http://localhost:3001/api/pagos
+Content-Type: application/json
+
+{
+  "cliente_id": 5,
+  "fecha_pago": "2024-06-01",
+  "dias_contratados": 30
+}
+```
+
+On success the API response is used to display a confirmation message:
+
+> Pago registrado: $90,000 por 30 días
+
+## Payment History
+
+Below the registration form, the **Historial de Pagos** card lists every payment that has been recorded, fetched via `pagosApi.listar()` on page mount and refreshed after each new payment is created.
+
+| Column | Description |
+|--------|-------------|
+| ID | Auto-generated payment record ID |
+| Cliente | Full name of the member |
+| Identificación | Member's government ID number |
+| Fecha | Payment date, formatted as a local date string |
+| Días | Number of contracted days |
+| Total | Amount paid, formatted with locale-aware thousands separators |
+
+### API call
+
+```js
+// Fetch all payments
+pagosApi.listar()
+
+// HTTP equivalent
+GET http://localhost:3001/api/pagos
+```

@@ -1,0 +1,61 @@
+---
+title: "Environment Configuration for GymSys"
+sidebarTitle: "Environment"
+description: "Configure the GymSys frontend for different environments by overriding the backend API URL and customizing Vite build settings."
+---
+
+GymSys separates runtime configuration from source code through environment variable files. This lets you run the same build artifact against a local development backend, a staging server, or a production API without touching any JavaScript. Both the frontend (Vite) and the backend server each have their own set of variables, described below.
+
+## Frontend Environment Variables
+
+The GymSys frontend reads one environment variable at startup:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_URL` | `http://localhost:3001/api` | Base URL for the backend REST API. All `fetch` calls are prefixed with this value. |
+
+To override the default, create a `.env.local` file in the project root (next to `package.json`) and set the variable:
+
+```bash
+VITE_API_URL=https://api.yourdomain.com/api
+```
+
+Vite automatically loads `.env.local` during both `vite dev` and `vite build`. Because the filename matches Vite's built-in gitignore pattern, the file is **not committed to version control** — keeping secrets and environment-specific URLs out of your repository history.
+
+You can also use `.env.production` to set values that apply only when running `vite build`:
+
+```bash
+# .env.production
+VITE_API_URL=https://api.yourdomain.com/api
+```
+
+<Warning>
+  The `VITE_` prefix is **required** for Vite to expose an environment variable to the browser bundle. Any variable defined without this prefix (e.g. `API_URL=...`) is intentionally kept server-side and will be `undefined` when accessed via `import.meta.env` in client code. Always prefix frontend variables with `VITE_`.
+</Warning>
+
+## Backend Environment Variables
+
+The backend server is not included in this repository, but a typical Node.js implementation will need the following variables. Create a `.env` file in your backend project root:
+
+```bash
+PORT=3001
+DB_CONNECTION=your_database_url
+CORS_ORIGIN=http://localhost:5173
+```
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | The port the backend HTTP server binds to. The frontend defaults to `3001` — change both values together if you use a different port. |
+| `DB_CONNECTION` | Full connection string for your database (PostgreSQL, MySQL, SQLite, etc.). |
+| `CORS_ORIGIN` | The frontend origin that the backend permits in its CORS policy. Use `http://localhost:5173` for local development and your production domain in staging/production. |
+
+## Production Checklist
+
+Before deploying GymSys to a public environment, verify each of the following items:
+
+- Set `VITE_API_URL` to your production API URL and rebuild with `npm run build`.
+- Enable HTTPS on both the frontend host and the backend API server. Browsers will block mixed-content requests (HTTPS page → HTTP API).
+- Configure the backend `CORS_ORIGIN` to allow exactly your production frontend domain — avoid wildcard (`*`) origins in production.
+- Run `npm run build` and deploy the contents of the `dist/` folder to your static file host.
+- Configure your static host to redirect all unmatched paths to `index.html` to support React Router's client-side navigation.
+- Verify that the backend is running, reachable from the frontend host, and returning the expected JSON shapes described in the [Backend Setup](/setup/backend) guide.

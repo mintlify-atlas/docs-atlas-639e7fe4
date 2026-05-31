@@ -1,0 +1,85 @@
+{
+  "projectType": "saas",
+  "projectName": "GymSys",
+  "projectDescription": "A web-based gym management information system for tracking members, payments, access control, and occupancy reports.",
+  "theme": "luma",
+  "primaryColor": "#6272ff",
+  "lightColor": "#f5f6fa",
+  "darkColor": "#1a1a2e",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/dashboard",
+              "features/clients",
+              "features/payments",
+              "features/access-control",
+              "features/reports"
+            ]
+          },
+          {
+            "group": "Configuration & Deployment",
+            "pages": [
+              "setup/backend",
+              "setup/frontend",
+              "setup/environment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/clients",
+              "api/payments",
+              "api/access"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Client registration and management (CRUD) with membership day tracking",
+    "Payment recording with tiered pricing packages (1-day, 15-day, 30-day, annual)",
+    "Real-time gym access control (entry/exit tracking) with occupancy view",
+    "Dashboard with key stats: total clients, active memberships, current occupancy",
+    "Reports module showing full client list and current gym occupancy",
+    "Responsive sidebar navigation built with React Router",
+    "REST API integration layer via a centralized service module"
+  ],
+  "publicApiSurface": [
+    "GET /api/clientes — list all clients",
+    "GET /api/clientes/:id — get a single client",
+    "POST /api/clientes — create a client",
+    "PUT /api/clientes/:id — update a client",
+    "DELETE /api/clientes/:id — delete a client",
+    "GET /api/pagos — list all payments",
+    "POST /api/pagos — record a payment",
+    "POST /api/acceso/entrada — register client entry",
+    "POST /api/acceso/salida — register client exit",
+    "GET /api/acceso/ocupacion — get current gym occupancy",
+    "GET /api/acceso/historial/:cliente_id — get access history for a client"
+  ]
+}

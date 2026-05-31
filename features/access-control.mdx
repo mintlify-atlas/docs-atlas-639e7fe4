@@ -1,0 +1,96 @@
+---
+title: "Access Control: Track Gym Entry and Exit in Real Time"
+sidebarTitle: "Access Control"
+description: "GymSys records member entries and exits, deducts membership days on entry, and shows a live list of everyone currently inside the gym."
+---
+
+The Access Control module, found at `/acceso`, is the operational hub for front-desk staff. It shows who is currently in the gym, lets staff register an entry for any member who arrives, and logs their exit when they leave. Every time a member enters, the server deducts one day from their `dias_restantes` counter, enforcing the membership balance in real time.
+
+## Current Occupancy
+
+The top card on the Access Control page is headed **Clientes dentro del gimnasio (N)**, where N is the live count returned by `accesoApi.ocupacion()`. The list is loaded on mount and refreshed after every entry or exit event.
+
+The occupancy table displays the following columns for each member currently inside:
+
+| Column | Description |
+|--------|-------------|
+| Nombre | Full name of the member |
+| Identificación | Government ID number |
+| Celular | Mobile phone number |
+| Días Rest. | Remaining membership days after the most recent entry |
+| Acción | **Registrar Salida** button to log their exit |
+
+If nobody is currently inside, the card shows an empty-state message: *"No hay clientes en el gimnasio en este momento."*
+
+```js
+// Fetch current occupancy
+accesoApi.ocupacion()
+
+// HTTP equivalent
+GET http://localhost:3001/api/acceso/ocupacion
+```
+
+## Registering an Entry
+
+Below the occupancy card, the **Registrar ingreso / salida** card contains a live search field. Staff type a member's name or ID number to filter the full client list in real time — the filter matches against `nombres` (case-insensitive) and `identificacion` simultaneously.
+
+Each result row shows the member's **Nombre**, **Identificación**, **Género**, **Días Rest.**, and current **Estado** badge, plus an action button:
+
+- **Entrada** (blue) — shown when `en_gimnasio` is `false`
+- **Salida** (amber) — shown when `en_gimnasio` is `true`
+
+Clicking **Entrada** calls `accesoApi.entrada(cliente_id)`. On success, a confirmation banner appears showing the member's name and their updated remaining day count. Both the client list and the occupancy card refresh automatically.
+
+```jsx
+const handleEntrada = async (id) => {
+  setError('');
+  setSuccess('');
+  try {
+    const res = await accesoApi.entrada(id);
+    setSuccess(`Entrada registrada: ${res.nombres}. Días restantes: ${res.dias_restantes_actualizados}`);
+    const updated = await clientesApi.listar();
+    setClientes(updated);
+    cargarOcupacion();
+  } catch (e) {
+    setError(e.message);
+  }
+};
+```
+
+```js
+// HTTP equivalent
+POST http://localhost:3001/api/acceso/entrada
+Content-Type: application/json
+
+{ "cliente_id": 5 }
+```
+
+<Warning>
+  The **Entrada** button is automatically **disabled** when a client's `dias_restantes` is 0 or less. Hovering over the disabled button shows the tooltip *"Sin días disponibles"*. Staff must direct the member to the Payments module to purchase additional days before entry can be granted.
+</Warning>
+
+## Registering an Exit
+
+An exit can be registered from two places:
+
+1. **Occupancy table** — click **Registrar Salida** next to any member currently listed as inside the gym.
+2. **Search results** — if a member's search result shows the **Salida** button (because `en_gimnasio` is `true`), click it directly from the search panel.
+
+Both paths call `accesoApi.salida(cliente_id)`. On success, a confirmation banner displays the member's name, and both the client list and occupancy table refresh to remove them from the current occupancy view.
+
+```js
+// HTTP equivalent
+POST http://localhost:3001/api/acceso/salida
+Content-Type: application/json
+
+{ "cliente_id": 5 }
+```
+
+## Business Rules
+
+The following rules are enforced by GymSys when managing access:
+
+- **No remaining days → entry blocked.** A member with `dias_restantes <= 0` cannot be admitted. The Entrada button is rendered but disabled.
+- **Entry deducts a day.** Each successful call to `accesoApi.entrada()` decrements `dias_restantes` by one on the server. The updated value is returned in the response as `dias_restantes_actualizados`.
+- **Mutual exclusivity of buttons.** A member already marked `en_gimnasio = true` shows only the **Salida** button in search results; the **Entrada** button is not rendered. This prevents double-entry.
+- **Occupancy is server-authoritative.** The occupancy list is always fetched fresh from `GET /api/acceso/ocupacion` after every action, so it reflects the true server state rather than optimistic local updates.

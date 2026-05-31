@@ -1,0 +1,54 @@
+---
+title: "Dashboard: Gym Overview and Quick Actions"
+sidebarTitle: "Dashboard"
+description: "The GymSys dashboard displays real-time stats for total members, active memberships, and current gym occupancy, plus quick-access shortcuts."
+---
+
+The GymSys dashboard — rendered by the `Inicio` page — is the first screen you see after the app loads. It gives staff an at-a-glance view of three core business metrics: how many clients are registered, how many hold an active membership, and how many people are physically inside the gym right now. Below the stats, four quick-action shortcuts let you jump to the most common tasks without navigating through the sidebar.
+
+## Stats Panel
+
+When the page mounts, `Inicio` fires two API calls in parallel — `clientesApi.listar()` to fetch every registered client and `accesoApi.ocupacion()` to fetch the current in-gym list — and then derives the three stat card values from the responses.
+
+<CardGroup cols={3}>
+  <Card title="👥 Clientes registrados" icon="users">
+    The total count of all clients returned by `clientesApi.listar()`. This is simply `clientes.length` and includes members with expired memberships.
+  </Card>
+  <Card title="✅ Con membresía activa" icon="check-circle">
+    The number of clients whose `dias_restantes` field is greater than zero — i.e. `clientes.filter(c => c.dias_restantes > 0).length`. Clients with zero or negative remaining days are excluded.
+  </Card>
+  <Card title="🚪 Dentro del gimnasio" icon="door-open">
+    The real-time occupancy count returned directly by `accesoApi.ocupacion()` as `ocupacion.length`. This reflects every member currently marked `en_gimnasio = true` on the server.
+  </Card>
+</CardGroup>
+
+The stats are calculated inside a single `Promise.all` so both API calls happen concurrently:
+
+```jsx
+useEffect(() => {
+  Promise.all([clientesApi.listar(), accesoApi.ocupacion()]).then(([clientes, ocupacion]) => {
+    setStats({
+      total: clientes.length,
+      dentro: ocupacion.length,
+      conDias: clientes.filter((c) => c.dias_restantes > 0).length,
+    });
+  });
+}, []);
+```
+
+<Tip>
+  Stats are fetched fresh on every page load via the `useEffect` with an empty dependency array. To see the latest numbers after performing actions elsewhere in the app, navigate back to the dashboard or reload the page.
+</Tip>
+
+## Quick Actions
+
+Below the stat cards, the dashboard renders four shortcut links under the **Acciones rápidas** heading. Each card displays an icon and a label, and clicking it navigates directly to the corresponding module.
+
+| Icon | Label | Destination route |
+|------|-------|-------------------|
+| ➕ | Nuevo Cliente | `/clientes/nuevo` |
+| 💰 | Registrar Pago | `/pagos` |
+| 🚪 | Control Acceso | `/acceso` |
+| 📊 | Ver Reportes | `/reportes` |
+
+These shortcuts mirror the main sidebar navigation and are implemented as React Router `<Link>` components, so no full page reload occurs when you click them.

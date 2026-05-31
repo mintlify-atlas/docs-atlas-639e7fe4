@@ -1,0 +1,259 @@
+---
+title: "REST API Endpoints for Gym Client Management"
+sidebarTitle: "Clients API"
+description: "Full reference for the /api/clientes endpoints: list, get, create, update, and delete gym member records with membership day tracking."
+---
+
+The `/api/clientes` resource manages gym member records. Each client stores personal details, their enrollment date, gender, and a running count of membership days remaining (`dias_restantes`). The `en_gimnasio` flag is toggled automatically by the Access API when a member enters or exits the gym.
+
+## GET /api/clientes
+
+Returns an array of all registered clients.
+
+### Response fields
+
+<ResponseField name="id" type="number">
+  Unique identifier for the client, assigned by the database.
+</ResponseField>
+
+<ResponseField name="nombres" type="string">
+  Full name of the client.
+</ResponseField>
+
+<ResponseField name="identificacion" type="string">
+  National ID or document number of the client.
+</ResponseField>
+
+<ResponseField name="celular" type="string">
+  Mobile phone number of the client.
+</ResponseField>
+
+<ResponseField name="fecha_inscripcion" type="string">
+  Enrollment date in ISO 8601 format (e.g. `2024-01-15`).
+</ResponseField>
+
+<ResponseField name="genero" type="string">
+  Gender of the client. One of `Masculino`, `Femenino`, or `Otro`.
+</ResponseField>
+
+<ResponseField name="dias_restantes" type="number">
+  Number of membership days the client still has available.
+</ResponseField>
+
+<ResponseField name="en_gimnasio" type="boolean">
+  `true` if the client is currently inside the gym; `false` otherwise.
+</ResponseField>
+
+### Example request
+
+```bash
+curl http://localhost:3001/api/clientes
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": 1,
+    "nombres": "Juan Pérez",
+    "identificacion": "1234567890",
+    "celular": "3001234567",
+    "fecha_inscripcion": "2024-01-15",
+    "genero": "Masculino",
+    "dias_restantes": 22,
+    "en_gimnasio": false
+  }
+]
+```
+
+---
+
+## GET /api/clientes/:id
+
+Returns a single client by their unique ID.
+
+### Path parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the client to retrieve.
+</ParamField>
+
+### Response fields
+
+Same fields as the array items returned by `GET /api/clientes` above.
+
+### Example request
+
+```bash
+curl http://localhost:3001/api/clientes/1
+```
+
+### Example response
+
+```json
+{
+  "id": 1,
+  "nombres": "Juan Pérez",
+  "identificacion": "1234567890",
+  "celular": "3001234567",
+  "fecha_inscripcion": "2024-01-15",
+  "genero": "Masculino",
+  "dias_restantes": 22,
+  "en_gimnasio": false
+}
+```
+
+---
+
+## POST /api/clientes
+
+Creates a new client record.
+
+### Request body
+
+<ParamField body="nombres" type="string" required>
+  Full name of the client (e.g. `"Juan Pérez"`).
+</ParamField>
+
+<ParamField body="identificacion" type="string" required>
+  National ID or document number (e.g. `"1234567890"`).
+</ParamField>
+
+<ParamField body="celular" type="string" required>
+  Mobile phone number (e.g. `"3001234567"`).
+</ParamField>
+
+<ParamField body="fecha_inscripcion" type="string" required>
+  Enrollment date in ISO 8601 format (`YYYY-MM-DD`).
+</ParamField>
+
+<ParamField body="genero" type="string" required>
+  Gender of the client. Must be one of `Masculino`, `Femenino`, or `Otro`.
+</ParamField>
+
+### Response fields
+
+The created client object, including the newly assigned `id`.
+
+### Example request
+
+```bash
+curl -X POST http://localhost:3001/api/clientes \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "nombres": "Juan Pérez",
+    "identificacion": "1234567890",
+    "celular": "3001234567",
+    "fecha_inscripcion": "2024-01-15",
+    "genero": "Masculino"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": 7,
+  "nombres": "Juan Pérez",
+  "identificacion": "1234567890",
+  "celular": "3001234567",
+  "fecha_inscripcion": "2024-01-15",
+  "genero": "Masculino",
+  "dias_restantes": 0,
+  "en_gimnasio": false
+}
+```
+
+---
+
+## PUT /api/clientes/:id
+
+Updates an existing client record. All body fields are replaced with the supplied values.
+
+### Path parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the client to update.
+</ParamField>
+
+### Request body
+
+<ParamField body="nombres" type="string" required>
+  Updated full name of the client.
+</ParamField>
+
+<ParamField body="identificacion" type="string" required>
+  Updated national ID or document number.
+</ParamField>
+
+<ParamField body="celular" type="string" required>
+  Updated mobile phone number.
+</ParamField>
+
+<ParamField body="fecha_inscripcion" type="string" required>
+  Updated enrollment date in ISO 8601 format (`YYYY-MM-DD`).
+</ParamField>
+
+<ParamField body="genero" type="string" required>
+  Updated gender. Must be one of `Masculino`, `Femenino`, or `Otro`.
+</ParamField>
+
+### Response fields
+
+The full updated client object reflecting the new values.
+
+### Example request
+
+```bash
+curl -X PUT http://localhost:3001/api/clientes/7 \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "nombres": "Juan Carlos Pérez",
+    "identificacion": "1234567890",
+    "celular": "3009876543",
+    "fecha_inscripcion": "2024-01-15",
+    "genero": "Masculino"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": 7,
+  "nombres": "Juan Carlos Pérez",
+  "identificacion": "1234567890",
+  "celular": "3009876543",
+  "fecha_inscripcion": "2024-01-15",
+  "genero": "Masculino",
+  "dias_restantes": 0,
+  "en_gimnasio": false
+}
+```
+
+---
+
+## DELETE /api/clientes/:id
+
+Permanently removes a client record from the system.
+
+<Warning>
+  Deletion is permanent and cannot be undone. All associated payment and access history records for this client may also be removed, depending on the database cascade configuration. Verify this behaviour in your backend before deleting clients in production.
+</Warning>
+
+### Path parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the client to delete.
+</ParamField>
+
+### Response
+
+Returns HTTP `200 OK` on success. Returns an error object (e.g. `{ "error": "Cliente no encontrado" }`) with a non-2xx status code if the client does not exist.
+
+### Example request
+
+```bash
+curl -X DELETE http://localhost:3001/api/clientes/7
+```

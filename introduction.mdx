@@ -1,0 +1,46 @@
+---
+title: "GymSys: Web Information System for Gyms"
+sidebarTitle: "Introduction"
+description: "GymSys is a web-based gym management system built with React and Vite. Track members, payments, access, and occupancy in one app."
+---
+
+GymSys is a full-featured web information system designed for gyms and fitness centers. Built with React 18 and Vite, it gives staff a single interface to manage client registrations, record payments, control gym access in real time, and review operational reports — all backed by a REST API that keeps data consistent and accessible.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get GymSys running locally in under 10 minutes.
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Explore how the frontend, API service layer, and backend fit together.
+  </Card>
+  <Card title="Dashboard" icon="gauge-high" href="/features/dashboard">
+    Learn what the Inicio dashboard displays and how stats are calculated.
+  </Card>
+  <Card title="API Overview" icon="code" href="/api/overview">
+    Browse every REST endpoint exposed by the GymSys backend.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+- **Client registration and management (CRUD)** — Create, read, update, and delete member profiles with membership day tracking so you always know when a client joined or renewed.
+- **Payment recording with tiered pricing packages** — Log payments against predefined plans: 1-day, 15-day, 30-day, and annual memberships.
+- **Real-time gym access control** — Record individual entry and exit events for each client and view current gym occupancy at a glance.
+- **Dashboard with live stats** — The Inicio page surfaces total registered clients, active memberships, and current occupancy without leaving the main screen.
+- **Reports module** — The Reportes page provides a full client list alongside a snapshot of current gym occupancy for quick operational review.
+- **Responsive sidebar navigation** — A persistent sidebar built with React Router's `NavLink` highlights the active page and covers all five main sections: Inicio, Clientes, Pagos, Control Acceso, and Reportes.
+- **Centralized REST API integration** — All HTTP calls are funnelled through `services/api.js`, a single module that owns the base URL, request headers, and error handling — keeping page components clean and testable.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend framework | React 18 |
+| Build tool | Vite |
+| Client-side routing | React Router (BrowserRouter + NavLink) |
+| Backend API | Node.js / Express REST API (implied by `localhost:3001`) |
+| HTTP transport | Native `fetch` via a shared `peticion()` helper |
+
+<Note>
+  The GymSys frontend connects to the backend REST API at `http://localhost:3001/api` by default. This base URL is defined in `services/api.js` and must match the address of your running backend server.
+</Note>

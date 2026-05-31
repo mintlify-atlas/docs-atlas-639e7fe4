@@ -1,0 +1,129 @@
+---
+title: "Frontend Setup: Run GymSys with Vite and React"
+sidebarTitle: "Frontend"
+description: "Step-by-step instructions for installing and running the GymSys React frontend locally using Vite, including how to change the backend API URL."
+---
+
+GymSys is built with **React 18**, **Vite**, and **React Router v6**. Vite provides near-instant hot module replacement during development and produces an optimized static bundle for production. React Router handles client-side navigation between the dashboard, clients, payments, access control, and reports pages — all without a full page reload.
+
+## Prerequisites
+
+Before running the frontend, make sure you have the following installed and available:
+
+- **Node.js 18 or later** — Vite and the project's dependencies require Node 18+.
+- **A package manager** — npm (bundled with Node.js), yarn, or pnpm all work.
+- **A running GymSys backend** — The frontend makes live API calls to `http://localhost:3001`. See the [Backend Setup](/setup/backend) page for the list of required endpoints.
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    Download the source code and enter the project directory:
+
+    ```bash
+    git clone https://github.com/Hansel-Pan/sistema-de-informacion-web-para-un-gimnasio.git
+    cd sistema-de-informacion-web-para-un-gimnasio
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required npm packages using your preferred package manager:
+
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+
+      ```bash pnpm
+      pnpm install
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the development server">
+    Launch Vite's dev server with hot module replacement enabled:
+
+    <CodeGroup>
+      ```bash npm
+      npm run dev
+      ```
+
+      ```bash yarn
+      yarn dev
+      ```
+
+      ```bash pnpm
+      pnpm dev
+      ```
+    </CodeGroup>
+
+    Vite will print the local URL once the server is ready — typically in under a second.
+  </Step>
+
+  <Step title="Open the application">
+    Navigate to [http://localhost:5173](http://localhost:5173) in your browser. The GymSys dashboard will load and immediately begin fetching data from your backend at `http://localhost:3001/api`.
+  </Step>
+</Steps>
+
+## Changing the Backend URL
+
+By default, every API call the frontend makes is prefixed with the constant defined in `services/api.js`:
+
+```js
+const API = "http://localhost:3001/api";
+```
+
+For staging or production deployments you will want to point this at a remote server. The recommended approach is to make the value configurable through a Vite environment variable instead of hardcoding a new URL:
+
+```js
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+```
+
+With this change in place, create a `.env.local` file in the project root and set the variable:
+
+```bash
+VITE_API_URL=https://api.yourdomain.com/api
+```
+
+`.env.local` is listed in Vite's default `.gitignore` pattern and will not be committed to version control. See the [Environment Configuration](/setup/environment) page for the full list of supported variables.
+
+<Tip>
+  The `VITE_` prefix is mandatory. Vite only exposes environment variables that start with `VITE_` to client-side code. Variables without this prefix remain server-side only and are not accessible via `import.meta.env`.
+</Tip>
+
+## Building for Production
+
+When you are ready to deploy, generate an optimized static bundle:
+
+```bash
+npm run build
+```
+
+Vite compiles and tree-shakes the application, then writes the output to the `dist/` directory. The contents of `dist/` are plain HTML, CSS, and JavaScript — serve them with any static file host (Nginx, Apache, Vercel, Netlify, Cloudflare Pages, etc.).
+
+<Note>
+  Because GymSys uses React Router's `BrowserRouter`, your server must redirect all requests to `index.html` so that deep links (e.g. `/clientes/editar/5`) resolve correctly. Consult your hosting provider's documentation for SPA fallback configuration.
+</Note>
+
+## Project Structure
+
+The table below describes the purpose of each key file and directory in the repository:
+
+| Path | Description |
+|------|-------------|
+| `main.jsx` | Application entry point. Mounts the React tree into the `#root` DOM node using `createRoot`. |
+| `App.jsx` | Top-level component. Configures `BrowserRouter`, renders the `Navbar` sidebar, and defines all client-side routes. |
+| `components/Navbar.jsx` | Fixed sidebar navigation with links to all main sections of the app. |
+| `pages/Inicio.jsx` | Dashboard home page with summary statistics. |
+| `pages/Clientes.jsx` | Client list with search and delete actions. |
+| `pages/ClienteForm.jsx` | Create and edit form for individual clients (shared route for `/clientes/nuevo` and `/clientes/editar/:id`). |
+| `pages/Pagos.jsx` | Payment log and new payment registration form. |
+| `pages/Acceso.jsx` | Real-time gym occupancy panel with entry and exit recording. |
+| `pages/Reportes.jsx` | Reporting and data summary views. |
+| `services/api.js` | Centralized API module. Exports `clientesApi`, `pagosApi`, and `accesoApi` objects built on top of the shared `peticion()` fetch helper. |
+| `App.css` | Component-scoped styles: layout, navbar, cards, tables, buttons, forms, badges, and responsive breakpoints. |
+| `index.css` | Global reset and base typography (margin/padding reset, `Inter` font stack, link colours). |
